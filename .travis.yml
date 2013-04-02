@@ -1,0 +1,7 @@
+language: c
+env:
+  - PERL_CPANM_OPT="--mirror http://cpan.cpantesters.org"
+install:
+  - sudo apt-get -y install valgrind
+script:
+  - make grind

@@ -140,10 +140,11 @@ Testing
 
 This module uses the perl [Test::Nginx](https://github.com/agentzh/test-nginx)
 module with tests in the `t` directory with a specialized build of nginx of the
-version specified in `Makefile`
+version specified in `Makefile`.  A local install of dependent CPAN modules
+will be downloaded with `cpanminus` into `t/ext`.  Sudo/root access is not
+required.
 
 ```
-cpan install Test::Nginx
 make test
 ```
 

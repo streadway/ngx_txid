@@ -1,8 +1,8 @@
-# vi:filetype=
+# vi:filetype=perl
 
 use Test::Nginx::Socket;
 
-repeat_each(2);
+repeat_each(17);
 log_level('debug');
 workers(4);
 

@@ -3,25 +3,39 @@ nginx_url=http://nginx.org/download/$(nginx).tar.gz
 
 src=$(wildcard *.c)
 
-test: t/$(nginx)/objs/nginx
-	env PATH=$(PWD)/t/$(nginx)/objs:$(PATH) prove5.12 -r t
+test: t/$(nginx)/objs/nginx t/ext/lib/perl5
+	env PATH=$(PWD)/t/$(nginx)/objs:$(PATH) perl -It/ext/lib/perl5 -MTest::Harness -e "runtests 't/base.t'";
 
-grind: t/$(nginx)/objs/nginx
-	env TEST_NGINX_VERBOSE=1 TEST_NGINX_SLEEP=2 TEST_NGINX_USE_VALGRIND=1 $(MAKE) test
+grind:
+	env TEST_NGINX_USE_VALGRIND=1 $(MAKE) test
 
 clean:
-	rm -f t/$(nginx)/Makefile
-	rm -rf t/$(nginx)/objs
-	rm -rf t/$(nginx)/.patches-applied
+	rm -rf t/$(nginx)
+	rm -rf t/ext
+
+t/ext:
+	mkdir -p $@
+	touch $@
+
+t/ext/cpanm: t/ext
+	curl -o $@ -L http://cpanmin.us
+	chmod +x $@
+	touch $@
+
+t/ext/lib/perl5: t/ext/cpanm
+	$< -Lt/ext --notest Test::Nginx Test::Harness
+	touch $@
 
 t/$(nginx).tar.gz:
 	curl -o $@ $(nginx_url)
 
 t/$(nginx): t/$(nginx).tar.gz
 	tar -Ct -xf $<
+	touch $@
 
 t/$(nginx)/.patches-applied: t/$(nginx)
-	curl https://raw.github.com/shrimp/no-pool-nginx/master/$(nginx)-no_pool.patch | patch -d $< -p1
+	curl https://raw.github.com/shrimp/no-pool-nginx/master/$(nginx)-no_pool.patch | patch -d $< -p1 --quiet
+	perl -p -i -e "s/USR2/XCPU/g" t/$(nginx)/src/core/ngx_config.h # needed for valgrind's USR2 handler
 	touch $@
 
 t/$(nginx)/Makefile: t/$(nginx) t/$(nginx)/.patches-applied
