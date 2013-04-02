@@ -1,0 +1,8 @@
+{
+  <insert_a_suppression_name_here>
+  Memcheck:Leak
+  fun:malloc
+  fun:ngx_alloc
+  fun:ngx_crc32_table_init
+  fun:main
+}
