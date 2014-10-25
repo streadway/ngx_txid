@@ -63,10 +63,12 @@ Use a monotonic millisecond resolution clock in the high 42 bits and system
 entropy for the low 54 bits.  Use enough entropy bits to satisfy a collision
 probability at a desired global request rate.
 
+```
 +------------- 64 bits------------+--- 32 bits ----+
 +------ 42 bits ------+--22 bits--|----------------+
 | msec since 1970-1-1 | random    | random         |
 +---------------------+-----------+----------------+
+```
 
 A request rate of 1 million per second across all servers means 1000 random
 values per millisecond.  Estimating the collision probability using the
