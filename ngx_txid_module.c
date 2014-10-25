@@ -64,12 +64,17 @@ ngx_txid_make(unsigned char *out, const size_t len) {
         return -1;
     }
 
+    // The timestamp is 64 bits, but shorten it to 42 bits. This is enough to
+    // store dates up to 2109-05-15 (4398046511103 milliseconds past epoch).
     const ngx_msec_t msec = ngx_txid_next_tick() << 22;
-    out[0] =  (msec >> 56) & 0xff;
-    out[1] =  (msec >> 48) & 0xff;
-    out[2] =  (msec >> 32) & 0xff;
-    out[3] =  (msec >> 16) & 0xff;
-    out[4] |= (msec >> 8)  & 0xff;  // share the 5th byte with entropy
+    out[0] =  (msec >> (64 - 1 * 8)) & 0xff; // 1st byte - bits 1-8 of time
+    out[1] =  (msec >> (64 - 2 * 8)) & 0xff; // 2nd byte - bits 9-16 of time
+    out[2] =  (msec >> (64 - 3 * 8)) & 0xff; // 3rd byte - bits 17-24 of time
+    out[3] =  (msec >> (64 - 4 * 8)) & 0xff; // 4th byte - bits 25-32 of time
+    out[4] =  (msec >> (64 - 5 * 8)) & 0xff; // 5th byte - bits 32-40 of time
+    out[5] |= (msec >> (64 - 6 * 8)) & 0xff; // 6th byte - bits 41-42 of time
+                                             // the rest of the byte is shared
+                                             // with entropy
 
     return 0;
 }

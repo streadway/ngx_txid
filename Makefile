@@ -1,10 +1,18 @@
 nginx=nginx-1.3.7
 nginx_url=http://nginx.org/download/$(nginx).tar.gz
 
+libfaketime=libfaketime-0.9.6
+libfaketime_url=http://www.code-wizards.com/projects/libfaketime/$(libfaketime).tar.gz
+
 src=$(wildcard *.c)
 
-test: t/$(nginx)/objs/nginx t/ext/lib/perl5
-	env PATH=$(PWD)/t/$(nginx)/objs:$(PATH) perl -It/ext/lib/perl5 -MTest::Harness -e "runtests 't/base.t'";
+test: t/$(nginx)/objs/nginx t/ext/lib/perl5 t/ext/$(libfaketime)/src/libfaketime.so.1
+	env PATH=$(PWD)/t/$(nginx)/objs:$(PATH) \
+		TZ=UTC \
+		LD_PRELOAD=$(PWD)/t/ext/$(libfaketime)/src/libfaketime.so.1 \
+		DYLD_FORCE_FLAT_NAMESPACE=1 \
+		DYLD_INSERT_LIBRARIES=$(PWD)/t/ext/$(libfaketime)/src/libfaketime.1.dylib \
+		perl -It/ext/lib/perl5 -MTest::Harness -e "runtests('t/base.t', 't/sortable.t', 't/time_format_past.t', 't/time_format_future.t')";
 
 grind:
 	env TEST_NGINX_USE_VALGRIND=1 $(MAKE) test
@@ -22,8 +30,22 @@ t/ext/cpanm: t/ext
 	chmod +x $@
 	touch $@
 
+# Note: Install Test::Nginx from git for new "add_response_body_check"
+# functionality used by sortable.t tests. Should go back to CPAN version once
+# v0.24 is released.
 t/ext/lib/perl5: t/ext/cpanm
-	$< -Lt/ext --notest Test::Nginx Test::Harness
+	$< -Lt/ext --notest LWP::Protocol::https https://github.com/openresty/test-nginx/archive/daaaa89e98eac58edf233aa1db06fd20b6783886.tar.gz Test::Harness
+	touch $@
+
+t/ext/$(libfaketime).tar.gz: t/ext
+	curl -o $@ $(libfaketime_url)
+
+t/ext/$(libfaketime): t/ext/$(libfaketime).tar.gz
+	tar -Ct/ext -xf $<
+	touch $@
+
+t/ext/$(libfaketime)/src/libfaketime.so.1: t/ext/$(libfaketime)
+	cd t/ext/$(libfaketime) && $(MAKE)
 	touch $@
 
 t/$(nginx).tar.gz:
