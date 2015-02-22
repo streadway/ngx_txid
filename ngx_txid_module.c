@@ -116,7 +116,7 @@ ngx_txid_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data
 }
 
 static ngx_int_t
-ngx_txid_init_module(ngx_cycle_t *cycle) {
+ngx_txid_init_process(ngx_cycle_t *cycle) {
     txid_dev_urandom = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
     if (txid_dev_urandom == -1) {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
@@ -128,6 +128,13 @@ ngx_txid_init_module(ngx_cycle_t *cycle) {
                   "opened /dev/urandom %d for pid %d", txid_dev_urandom, ngx_pid);
 
     return NGX_OK;
+}
+
+static void
+ngx_txid_exit_process(ngx_cycle_t *cycle) {
+    if (txid_dev_urandom && txid_dev_urandom != -1) {
+       close(txid_dev_urandom);
+    }
 }
 
 static ngx_str_t ngx_txid_variable_name = ngx_string("txid");
@@ -172,11 +179,11 @@ ngx_module_t  ngx_txid_module = {
   ngx_txid_module_commands,  /* module directives */
   NGX_HTTP_MODULE,                /* module type */
   NULL,                           /* init master */
-  ngx_txid_init_module,           /* init module */
-  NULL,                           /* init process */
+  NULL,                           /* init module */
+  ngx_txid_init_process,          /* init process */
   NULL,                           /* init thread */
   NULL,                           /* exit thread */
-  NULL,                           /* exit process */
+  ngx_txid_exit_process,          /* exit process */
   NULL,                           /* exit master */
   NGX_MODULE_V1_PADDING
 };
